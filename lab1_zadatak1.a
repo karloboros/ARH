@@ -1,0 +1,77 @@
+        mov r0, #0x500          ; pocetna adresa sa koje ucitavamo podatke
+        ldr r1, [r0]            ; u r1 je ucitan podatak sa r0
+        mov r4, #0x1000         ; adresa u koju spremamo podatke
+        mov sp, #0x10000        ; inicijalizacija stoga
+
+petlja  ldr r0, [r1], #4        ; u r0 cemo ucitati operaciju, uvecali za 4 
+                                ; da ucitamo sljedeci podatak
+        cmp r0, #maska          ; ovdje prekidamo program
+        beq kraj
+        
+        ldr r2, [r1], #4        ; u r2 ce ici prvi podatak
+        ldr r3, [r1], #4        ; u r3 ce ici drugi podatak
+        
+        cmp r0, #0
+        addeq r2, r2, r3        ; ako je r0 = 0, zbrajam
+        
+        cmp r0, #1
+        subeq r2, r2, r3        ; ako je r0 = 1, oduzimam
+        
+        cmp r0, #2
+        muleq r10, r2, r3        ; ako je r0 = 2, mnozim
+        mov r2, r10
+
+        stmhifd sp!, {r2, r3}
+        bhi dijeli              ; ako je r0 = 0, dijelim pomocu potprograma
+        ldmhifd sp!, {r6}        
+
+        str r2, [r4]            ; pospremam podatke
+        add r4, r4, #4          ; pomicem adresu za sljedeci podatak
+        
+        b petlja                ; vracam se na pocetak petlje
+
+dijeli  stmfd sp!, {r8, r9}     ; skuziti kaj je
+        ldr r8, [sp, #4]
+        ldr r9, [sp, #8]
+        mov r7, #0              ; minus ili ne kod oduzimanja
+; provjeravam jel prvi broj negativan
+        and r6, r8, #0x10000000 
+        cmp r6, #0
+        subne r8, r8, #1
+        mvnne r8, r8
+        addne r7, r7, #1         
+; provjeravam jel drugi broj negativan
+        and r6, r9, #0x10000000 
+        cmp r6, #0
+        subne r9, r9, #1
+        mvnne r9, r9
+        addne r7, r7, #1
+; gledam jel drugi broj 0
+        cmp r9, #0
+        beq stani
+
+        mov r6, #0
+ponovo  cmp r8, r9              ; vrti se dok ostatak ne bude < od drugog clana
+        blo stani
+        sub r8, r8, r9
+        add r6, r6, #1
+        b ponovo
+stani   cmp r7, #1              ; gledam jel jedan bio negativan
+        mvneq r6, r6            ; stvaram 2'k rezultata
+        addeq r6, r6, #1
+        str r6, [sp, #8]        ; pospremam ga natrag
+        ldmfd sp!, {r8, r9}
+        mov pc, lr
+
+
+kraj    mov r2, #0              ; zadnji podatak, dajem mu vrijednost
+        str r2, [r4]            
+        swi 123456              ; kraj programa
+
+        org 0x500
+maska   dw  0x80808080
+blok1   dw  0x00000003, 0xfffffeff, 0x00000010
+blok2   dw  0x00000001, 0x000001f4, 0xfffffd44
+blok3   dw  0x00000002, 0xfffffffe, 0x0000000a
+blok4   dw  0x00000003, 0xfffff000, 0xffffffc0
+blok    dw  0x80808080
