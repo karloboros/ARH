@@ -1,0 +1,87 @@
+        org 0                           ; pocetna pozicija od koje krece program
+        b glavni                        ; skace na glavni dio programa
+
+        org 0x18                        ; ovdje nam je adresa programa gdje se obraduje prekid
+        b prekid                        ; skacemo na dio gdje se obraduje prekid, nije toliko potrebno jer nam je prekid odmah ispod
+
+prekid  stmfd sp!, {r0,r1,r2,r3,lr}     ; potrebno nam je jer koristimo irq, da koristimo fiq nam ne bi trebalo jer bi koristili registre 8-12
+        ldr r0, rtc                     ; ucitavamo adresu rtca
+
+        mov r1, #0                      ;
+        str r1, [r0, #0x0c]             ; 0x0c je adresa brojila, postavljamo brojilo (natrag) na nulu
+        mov r1, #1                      ;
+        str r1, [r0, #0x08]             ; 0x08 odreduje dolazi li do prekida ili ne, ako je 0 se skace na program za prekid? pa zato sad postavimo na 1 da se ponovno moze
+                                        ; dogoditi prekid
+        str r1, [r0, #0x10]             ; 0x10 je za dopustanje ili zabranu prekida, ovdje smo ga omogucili
+
+        ldr r2, gpio                    ; adresa gpioa
+        ldr r1, stanje                  ; ucitavamo stanje
+
+s4_s1   ldr r1, stanje                  ; necu za sva stanja, ali ukratko ucitavamo stanje i trazimo koje je
+        cmp r1, #4 ;stanje je 4
+        moveq r1, #1 ;novo stanje je 1
+        str r1, stanje  
+        moveq r3, #0b00100000           ; postavljamo kako zelimo da nam lampice svijetle
+        streq r3, [r2, #0]              ; postavljamo to na gpio na adresu nula jer nam je ona bitna za trenutno stanje
+        beq next                        ; skace na next labelu
+        
+s1_s2   ldr r1, stanje
+        cmp r1, #1 ;stanje je 1
+        addeq r1, r1, #1 ;novo stanje je 2
+        str r1, stanje
+        moveq r3, #0b01100000
+        streq r3, [r2, #0]
+        beq next
+
+s2_s3   ldr r1, stanje
+        cmp r1, #2 ;stanje je 2
+        addeq r1, r1, #1 ;novo stanje je 3
+        str r1, stanje
+        moveq r3, #0b10000000
+        streq r3, [r2, #0]
+        beq next
+
+s3_s4   ldr r1, stanje
+        cmp r1, #3 ;stanje je 3
+        addeq r1, r1, #1 ;novo stanje je 4
+        str r1, stanje
+        moveq r3, #0b01000000
+        streq r3, [r2, #0]
+        beq next
+
+next    str r1, stanje                  ; pospremamo novo stanje za sljedeci put
+        ldmfd sp!, {r0,r1,r2,r3,lr}     ; micemo stvari sa stoga
+        subs pc, lr, #4                 ; pozicioniramo se natrag u program? i onda se krece ponovno vrtjeti
+
+glavni  msr cpsr, #0b11010010           ; huh ovo nisam siguran... prvo postavljamo cpsr u to, a cilj toga je da preko 110 dozvolimo prekide (sa ovih 11 jelda), 10010 nam govori u koji program idemo
+        mov r13, #0x10000               ; stvaramo mjesto gdje je stog u tom nacinu rada
+        msr cpsr, #0b11010011           ; valjda ista stvar
+        mov r13, #0xfc00                ; i ista stvar
+
+        ; inicijalziacija gpio
+        ldr r2, gpio ; dohvat adrese gpio
+        mov r1, #0b11100000 ; smjer vrata a, bitovi 5, 6 i 7 su izlazni, ostali ulazni
+        str r1, [r2, #0x08]             ; 0x08 adresa nam sluzi da postavimo opcenito pinove koji su za kaj, to ne smijemo mijenjati do kraja programa
+        mov r1, #0b00100000 ; prvo stanje
+        str r1, [r2, #0]                ; 0x00 tu postavljamo pocetno stanje
+        
+        ; inicijalizacija rtc
+        ldr r0, rtc
+        ldr r1, konst
+        str r1, [r0, #0x04]             ; 0x04 je konstanta brojenja preko koje usporedujemo i trazimo kada dolazi do prekida
+        mov r1, #1
+        str r1,[r0, #0x10]              ; 0x10 ovdje damo dozvolu za prekid rtc-u
+        mov r1, #0
+        str r1, [r0, #0x0c]             ; 0x0c ovo je brojilo koje se mijenja i usporeduje sa konstantom, ovdje ga brisemo i postavljamo na nulu
+        
+        ; dozvoljavanje irq
+        mrs r2, cpsr                    ; nemam pojma
+        bic r2, r2, #0x80               ; ali mislim
+        msr cpsr, r2                    ; da cu nauciti napamet
+
+petlja  b petlja                        ; ovo je onaj "koristan" posao sto pretpostavljam da znaci da se to vrti dok se konstanta i brojilo ne izjednaci, rokne prekid i onda krece parti
+
+stanje  dw 1 ; pocetno stanje semafora
+gpio    dw 0xffff0b00
+rtc     dw 0xffff0e00
+konst   dw 5 ; konstanta brojenja, 1Hz*5s = 5
