@@ -1,0 +1,182 @@
+main    lui     s0, %hi(0xffff0f00)     # adresa lcd-a        
+        addi    s0, s0, %lo(0xffff0f00)       
+        lw      a0, 0x500(x0)           # ucitavanje podatka kojeg treba prevesti
+        lw      x15, prvi_jedan(x0)
+        lw      x16, prvi_nula(x0)
+        jal     ra, pretvori            # poziv fje
+        halt                            # end
+
+pretvori  
+        addi    x11, x0,0x0d            # brisem ulazni registar
+        and     x11, x11, x16           # [7] = 0
+        sb      x11, 4(s0)
+        or      x11, x11, x15           # [7] = 1
+        sb      x11, 4(s0)
+        and     x11, x11, x16           # [7] = 0
+        sb      x11, 4(s0)
+loop  
+        beq     a0, x0, end             # zapocinjemo smanjivanje pocetnog broja
+        addi    x13,x0, 100
+        blt     a0, x13, step2          # broj<oznaka => preskacemo ispisivanje i smanjivanje
+        addi    x11, x0, 0x43           
+        sb      x11, 4(s0)
+        addi    a0, a0, -100            
+        and     x11, x11, x16           # [7] = 0
+        sb      x11, 4(s0)
+        or      x11, x11, x15           # [7] = 1
+        sb      x11, 4(s0)
+        and     x11, x11, x16           # [7] = 0
+        sb      x11, 4(s0)
+        beq     x0, x0, loop            # preskacemo ostale
+step2   
+        addi    x13, x0, 90
+        blt     a0, x13, step3
+        addi    x11, x0, 0x58           
+        sb      x11, 4(s0)
+        and     x11, x11, x16           # [7] = 0
+        sb      x11, 4(s0)
+        or      x11, x11, x15           # [7] = 1
+        sb      x11, 4(s0)
+        and     x11, x11, x16           # [7] = 0
+        sb      x11, 4(s0)
+        addi    x11, x0, 0x43           
+        sb      x11, 4(s0)
+        addi    a0, a0, -90             
+        and     x11, x11, x16           # [7] = 0
+        sb      x11, 4(s0)
+        or      x11, x11, x15           # [7] = 1
+        sb      x11, 4(s0)
+        and     x11, x11, x16           # [7] = 0
+        sb      x11, 4(s0)
+        beq     x0, x0, loop
+step3                                   # ponavljam prethodni postupak
+        addi    x13 ,x0, 50
+        blt     a0, x13, step4
+        addi    x11, x0, 0x4c           
+        sb      x11, 4(s0)
+        addi    a0, a0, -50             
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        or      x11, x11, x15
+        sb      x11, 4(s0)
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        beq     x0, x0, loop
+step4                                   # ponavljam prethodni postupak
+        addi      x13 ,x0, 40
+        blt     a0, x13, step5
+        addi    x11, x0, 0x58           
+        sb      x11, 4(s0)
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        or      x11, x11, x15
+        sb      x11, 4(s0)
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        addi    x11, x0, 0x4c           
+        sb      x11, 4(s0)
+        addi    a0, a0, -40             
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        or      x11, x11, x15
+        sb      x11, 4(s0)
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        beq     x0, x0, loop
+step5                                   # ponavljam prethodni postupak
+        addi    x13 ,x0, 10
+        blt     a0, x13, step6
+        addi    x11, x0, 0x58           
+        sb      x11, 4(s0)
+        addi    a0, a0, -10             
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        or      x11, x11, x15
+        sb      x11, 4(s0)
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        beq     x0, x0, loop
+step6                                   # ponavljam prethodni postupak
+        addi    x13 ,x0, 9
+        blt     a0, x13, step7
+        addi    x11, x0, 0x49           
+        sb      x11, 4(s0)
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        or      x11, x11, x15
+        sb      x11, 4(s0)
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        addi    x11, x0, 0x58           
+        sb      x11, 4(s0)
+        addi    a0, a0, -9             
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        or      x11, x11, x15
+        sb      x11, 4(s0)
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        beq     x0, x0, loop
+step7                                   # ponavljam prethodni postupak
+        addi    x13 ,x0, 5
+        blt     a0, x13, step8
+        addi    x11, x0, 0x56           
+        sb      x11, 4(s0)
+        addi    a0, a0, -5              
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        or      x11, x11, x15
+        sb      x11, 4(s0)
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        beq     x0, x0, loop
+step8                                   # ponavljam prethodni postupak
+        addi    x13 ,x0, 4
+        blt     a0, x13, step9
+        addi    x11, x0, 0x49          
+        sb      x11, 4(s0)
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        or      x11, x11, x15
+        sb      x11, 4(s0)
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        addi    x11, x0, 0x56           
+        sb      x11, 4(s0)
+        addi    a0, a0, -4              
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        or      x11, x11, x15
+        sb      x11, 4(s0)
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        beq     x0, x0, loop
+step9                                   # ponavljam prethodni postupak
+        addi    x13 ,x0, 1
+        blt     a0, x13, loop
+        addi    x11, x0, 0x49          
+        sb      x11, 4(s0)
+        addi    a0, a0, -1              
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        or      x11, x11, x15
+        sb      x11, 4(s0)
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        beq     x0, x0, loop            # broj != 0 => ponavljamo
+end     
+        addi    x11, x0, 0x0a           # saljem znak za ispis na lcd
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        or      x11, x11, x15
+        sb      x11, 4(s0)
+        and     x11, x11, x16
+        sb      x11, 4(s0)
+        addi    x11, x0, 0x0a
+        jalr    x0, 0(ra)               #povratak u main
+
+prvi_jedan      dw 0x80
+prvi_nula       dw 0x7f
+
+        org 0x500
+        dw 148
